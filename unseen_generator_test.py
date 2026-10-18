@@ -1,18 +1,3 @@
-"""
-Generator-held-out evaluation.
-
-This experiment is designed to test generalisation to an AI voice generator
-that was NOT included in the training data.
-
-Default:
-    Held-out generator = NaturalSpeech3
-
-The remaining fake generators plus real_samples are used for training.
-The held-out generator plus real_samples are used for testing.
-
-This is intentionally separate from main.py so the baseline and
-generalisation experiment remain easy to compare.
-"""
 
 import os
 import librosa
