@@ -10,78 +10,48 @@ import tensorflow as tf
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 
-
-# --------------------------------------------------
 # Application configuration
-# --------------------------------------------------
-
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "voice_deepfake_cnn.keras"
 UPLOAD_DIR = BASE_DIR / "temp_uploads"
-
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 app = Flask(__name__)
-
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
-
 ALLOWED_EXTENSIONS = {"wav", "mp3", "flac", "ogg", "m4a"}
-
 SAMPLE_RATE = 16000
 DURATION = 4
 N_MFCC = 40
-
 _model = None
 
-
-# --------------------------------------------------
 # Load model once when the application starts
-# --------------------------------------------------
-
 def get_model():
     global _model
-
     if _model is None:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(
                 f"Trained model not found: {MODEL_PATH}. "
                 "Train the model using main.py first."
             )
-
         _model = tf.keras.models.load_model(MODEL_PATH)
 
     return _model
-
-
-# --------------------------------------------------
+    
 # File validation
-# --------------------------------------------------
-
 def allowed_file(filename):
     return (
         "." in filename
         and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
-
-# --------------------------------------------------
 # Audio preprocessing
-# Must match the training preprocessing in main.py
-# --------------------------------------------------
-
 def extract_features(audio_path):
     audio, _ = librosa.load(
         str(audio_path),
         sr=SAMPLE_RATE,
-        mono=True
-    )
-
+        mono=True)
     if audio.size == 0:
         raise ValueError("The uploaded audio contains no readable samples.")
-
     target_length = SAMPLE_RATE * DURATION
-
-    # Match the fixed duration used during training.
     if len(audio) < target_length:
         audio = np.pad(
             audio,
@@ -90,8 +60,6 @@ def extract_features(audio_path):
         )
     else:
         audio = audio[:target_length]
-
-    # Match MFCC extraction settings used in main.py.
     mfcc = librosa.feature.mfcc(
         y=audio,
         sr=SAMPLE_RATE,
@@ -99,10 +67,6 @@ def extract_features(audio_path):
     )
 
     features = mfcc.astype(np.float32)
-
-    # Common CNN input shapes:
-    # (1, 40, time, 1) or (1, 40, time).
-    # Adapt to the trained model's expected dimensions.
     model = get_model()
     input_shape = model.input_shape
 
@@ -119,7 +83,6 @@ def extract_features(audio_path):
         )
 
     if expected_width is not None and features.shape[1] != expected_width:
-        # Align frame count with the trained model's expected input.
         if features.shape[1] > expected_width:
             features = features[:, :expected_width]
         else:
@@ -129,33 +92,19 @@ def extract_features(audio_path):
                 mode="constant"
             )
 
-    # Add batch dimension.
     features = np.expand_dims(features, axis=0)
-
-    # Add channel dimension for 2D CNN input.
     if len(input_shape) == 4:
         features = np.expand_dims(features, axis=-1)
 
     return features.astype(np.float32)
-
-
-# --------------------------------------------------
-# Convert model output to a score
-# Assumes sigmoid output represents class 1 = AI-generated.
-# Verify this matches your main.py label encoding.
-# --------------------------------------------------
 
 def interpret_prediction(model, features):
     output = np.asarray(model.predict(features, verbose=0))
 
     if output.size == 0:
         raise ValueError("The model returned an empty prediction.")
-
-    # Binary sigmoid output.
     if output.size == 1:
         ai_score = float(output.reshape(-1)[0])
-
-    # Two-class softmax output: [real, AI-generated].
     elif output.shape[-1] == 2:
         ai_score = float(output.reshape(-1, 2)[0][1])
 
@@ -181,15 +130,9 @@ def interpret_prediction(model, features):
         "real_score": round(real_score * 100, 2)
     }
 
-
-# --------------------------------------------------
-# Pages and API endpoints
-# --------------------------------------------------
-
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -202,8 +145,6 @@ def health():
             else "Train the model before making predictions."
         )
     })
-
-
 @app.route("/predict", methods=["POST"])
 def predict():
     if "audio" not in request.files:
@@ -230,8 +171,6 @@ def predict():
 
     try:
         safe_name = secure_filename(uploaded_file.filename)
-
-        # Unique filename prevents collisions between uploads.
         extension = safe_name.rsplit(".", 1)[1].lower()
         temporary_path = UPLOAD_DIR / f"{uuid.uuid4().hex}.{extension}"
 
