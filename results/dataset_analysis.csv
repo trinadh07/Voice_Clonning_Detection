@@ -1,0 +1,10 @@
+Folder,Class,Number of Files
+real_samples,Real,2274
+xTTS,Fake,600
+seedtts_files,Fake,599
+VoiceBox,Fake,104
+VALLE,Fake,95
+OpenAI,Fake,600
+PromptTTS2,Fake,25
+FlashSpeech,Fake,118
+NaturalSpeech3,Fake,32
