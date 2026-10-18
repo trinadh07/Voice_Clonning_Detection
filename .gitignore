@@ -1,5 +1,30 @@
+# Python virtual environments
 venv/
 .venv/
+env/
+
+# Python cache
 __pycache__/
 *.py[cod]
+
+# Secrets and local configuration
 .env
+.env.*
+!.env.example
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+temp/
+tmp/
+
+# Local datasets and generated outputs
+dataset/
+datasets/
+data/
+results/
