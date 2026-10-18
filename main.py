@@ -35,9 +35,6 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
 )
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
 
 DATASET_PATH = "dataset"
 RESULTS_PATH = "results"
@@ -67,10 +64,6 @@ AUDIO_EXTENSIONS = (".wav", ".mp3", ".flac", ".ogg", ".m4a")
 
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
-
-# ============================================================
-# DATASET UTILITIES
-# ============================================================
 
 def get_audio_files(folder):
     files = []
@@ -118,9 +111,6 @@ def analyse_dataset():
     return df
 
 
-# ============================================================
-# AUDIO PREPROCESSING + MFCC
-# ============================================================
 
 def extract_mfcc(file_path):
     try:
@@ -133,10 +123,8 @@ def extract_mfcc(file_path):
         if audio.size == 0:
             return None
 
-        # Waveform normalisation
         audio = librosa.util.normalize(audio)
 
-        # Fixed four-second input
         if len(audio) < MAX_LENGTH:
             audio = np.pad(audio, (0, MAX_LENGTH - len(audio)))
         else:
@@ -150,7 +138,6 @@ def extract_mfcc(file_path):
             hop_length=HOP_LENGTH,
         )
 
-        # Per-sample standardisation
         mfcc = (mfcc - np.mean(mfcc)) / (np.std(mfcc) + 1e-8)
 
         return mfcc.astype(np.float32)
@@ -213,9 +200,6 @@ def load_dataset():
     return X, y, generators
 
 
-# ============================================================
-# CNN
-# ============================================================
 
 def build_model(input_shape):
     model = Sequential([
@@ -257,9 +241,6 @@ def build_model(input_shape):
     return model
 
 
-# ============================================================
-# PLOTS
-# ============================================================
 
 def save_training_history(history):
     history_df = pd.DataFrame(history.history)
@@ -335,10 +316,6 @@ def save_evaluation_plots(y_test, predictions, probabilities, auc):
     plt.close()
 
 
-# ============================================================
-# BASELINE TRAINING
-# ============================================================
-
 def train_baseline():
     print("\n" + "=" * 70)
     print("LOADING AND PREPROCESSING DATA")
@@ -349,10 +326,7 @@ def train_baseline():
     print(f"\nFeature array: {X.shape}")
     print(f"Labels: {y.shape}")
 
-    # CNN channel dimension
     X = X[..., np.newaxis]
-
-    # Train/test
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -361,7 +335,6 @@ def train_baseline():
         stratify=y,
     )
 
-    # Train/validation
     X_train, X_val, y_train, y_val = train_test_split(
         X_train,
         y_train,
@@ -466,14 +439,9 @@ def train_baseline():
     print(f"Results saved in: {RESULTS_PATH}/")
 
 
-# ============================================================
-# MAIN
-# ============================================================
-
 if __name__ == "__main__":
     print("=" * 70)
     print("AI-GENERATED VOICE CLONING DETECTION")
-    print("MSc Computer Science Dissertation")
     print("=" * 70)
 
     analyse_dataset()
